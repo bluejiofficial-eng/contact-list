@@ -1,6 +1,3 @@
-<?php if (!defined('CONTACT_LIST')) {
-    exit;
-} ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,112 +6,74 @@
     <title>Contact List</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body data-standalone="true">
     <main class="page">
         <header class="mast">
             <p class="eyebrow">Directory</p>
             <h1>Contact List</h1>
             <p class="lede">Every field is required. Contacts are listed by last name.</p>
+            <p class="hint" id="storage-note" hidden>Contacts are saved in this browser.</p>
         </header>
 
-        <?php if ($notice !== null): ?>
-            <p class="banner banner-<?= e($noticeType) ?>" role="<?= e($noticeRole) ?>">
-                <?= e((string) $notice['message']) ?>
-            </p>
-        <?php endif; ?>
+        <p id="banner" class="banner" hidden role="status"></p>
 
         <div class="layout">
             <section class="panel" aria-labelledby="form-title">
                 <div class="panel-head">
-                    <h2 id="form-title"><?= e($formTitle) ?></h2>
-                    <?php if ($isEditing): ?>
-                        <a class="text-link" href="index.php">Cancel</a>
-                    <?php endif; ?>
+                    <h2 id="form-title">Add contact</h2>
+                    <button class="text-link" id="cancel-edit" type="button" hidden>Cancel</button>
                 </div>
 
-                <form id="contact-form" method="post" action="index.php" novalidate>
-                    <input type="hidden" name="csrf" value="<?= e((string) $_SESSION['csrf']) ?>">
-                    <input type="hidden" name="action" value="save">
-                    <?php if ($isEditing): ?>
-                        <input type="hidden" name="id" value="<?= (int) $editingId ?>">
-                    <?php endif; ?>
+                <form id="contact-form" action="#" method="post" novalidate>
+                    <input type="hidden" name="id" id="contact-id" value="">
 
-                    <?php foreach ($fields as $name => $field): ?>
-                        <div class="field">
-                            <label for="<?= e($name) ?>"><?= e($field['label']) ?></label>
-                            <input
-                                id="<?= e($name) ?>"
-                                name="<?= e($name) ?>"
-                                type="<?= e($field['type']) ?>"
-                                maxlength="<?= (int) $field['maxlength'] ?>"
-                                <?php if (isset($field['autocomplete'])): ?>
-                                    autocomplete="<?= e($field['autocomplete']) ?>"
-                                <?php endif; ?>
-                                <?php if (array_key_exists('spellcheck', $field)): ?>
-                                    spellcheck="<?= $field['spellcheck'] ? 'true' : 'false' ?>"
-                                <?php endif; ?>
-                                <?php if (isset($field['inputmode'])): ?>
-                                    inputmode="<?= e($field['inputmode']) ?>"
-                                <?php endif; ?>
-                                value="<?= e((string) ($values[$name] ?? '')) ?>"
-                                required
-                                <?= field_attrs($name, $errors, isset($field['hint'])) ?>
-                            >
-                            <?php if (isset($field['hint'])): ?>
-                                <p class="hint" id="<?= e($name) ?>-hint"><?= e($field['hint']) ?></p>
-                            <?php endif; ?>
-                            <?php if (isset($errors[$name])): ?>
-                                <p class="error" id="<?= e($name) ?>-error"><?= e($errors[$name]) ?></p>
-                            <?php endif; ?>
-                        </div>
-                    <?php endforeach; ?>
+                    <div class="field">
+                        <label for="first_name">First name</label>
+                        <input id="first_name" name="first_name" type="text" maxlength="50" autocomplete="given-name" required aria-required="true">
+                    </div>
 
-                    <button class="button" type="submit"><?= $isEditing ? 'Save changes' : 'Add contact' ?></button>
+                    <div class="field">
+                        <label for="last_name">Last name</label>
+                        <input id="last_name" name="last_name" type="text" maxlength="50" autocomplete="family-name" required aria-required="true">
+                    </div>
+
+                    <div class="field">
+                        <label for="email">Email</label>
+                        <input id="email" name="email" type="email" maxlength="50" autocomplete="email" spellcheck="false" required aria-required="true">
+                    </div>
+
+                    <div class="field">
+                        <label for="contact_number">Contact number</label>
+                        <input id="contact_number" name="contact_number" type="text" inputmode="numeric" maxlength="15" autocomplete="tel" required aria-required="true" aria-describedby="contact_number-hint">
+                        <p class="hint" id="contact_number-hint">Digits only, up to 15.</p>
+                    </div>
+
+                    <button class="button" id="save-button" type="submit">Add contact</button>
                 </form>
             </section>
 
             <section class="panel" aria-labelledby="list-title">
                 <div class="panel-head">
                     <h2 id="list-title">Contacts</h2>
-                    <p class="count"><?= e($countLabel) ?></p>
+                    <p class="count" id="count-label">0 people</p>
                 </div>
 
-                <?php if ($contacts === []): ?>
-                    <p class="empty">No contacts yet. Add the first one with the form.</p>
-                <?php else: ?>
-                    <div class="table-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th scope="col">Last name</th>
-                                    <th scope="col">First name</th>
-                                    <th scope="col">Email</th>
-                                    <th scope="col">Contact number</th>
-                                    <th scope="col"><span class="sr-only">Actions</span></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($contacts as $contact): ?>
-                                    <tr data-id="<?= (int) $contact['id'] ?>" data-email="<?= e((string) $contact['email']) ?>">
-                                        <td data-label="Last name"><?= e((string) $contact['last_name']) ?></td>
-                                        <td data-label="First name"><?= e((string) $contact['first_name']) ?></td>
-                                        <td data-label="Email"><?= e((string) $contact['email']) ?></td>
-                                        <td data-label="Contact number"><?= e((string) $contact['contact_number']) ?></td>
-                                        <td class="actions">
-                                            <a href="index.php?edit=<?= (int) $contact['id'] ?>">Edit</a>
-                                            <form method="post" action="index.php" data-confirm="Delete this contact?">
-                                                <input type="hidden" name="csrf" value="<?= e((string) $_SESSION['csrf']) ?>">
-                                                <input type="hidden" name="action" value="delete">
-                                                <input type="hidden" name="id" value="<?= (int) $contact['id'] ?>">
-                                                <button type="submit">Delete</button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php endif; ?>
+                <p class="empty" id="empty-state">No contacts yet. Add the first one with the form.</p>
+
+                <div class="table-wrap" id="table-wrap" hidden>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th scope="col">Last name</th>
+                                <th scope="col">First name</th>
+                                <th scope="col">Email</th>
+                                <th scope="col">Contact number</th>
+                                <th scope="col"><span class="sr-only">Actions</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="contact-rows"></tbody>
+                    </table>
+                </div>
             </section>
         </div>
     </main>
